@@ -1,0 +1,22 @@
+{
+  "name": "echomedia-automations",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Automated low-touch B2B creator-repurposing pipeline (Twitch/YouTube VOD -> AI clips -> client-approved -> auto-posted).",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "helper:dev": "tsx src/helper/server.ts",
+    "smoke": "tsx src/scripts/smoke-test-adapters.ts"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

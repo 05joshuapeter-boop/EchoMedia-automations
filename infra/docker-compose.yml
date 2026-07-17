@@ -1,0 +1,62 @@
+# Local dev / Phase 0-1 harness. NOT a production deployment manifest.
+#
+# ⚠️ Image tags below use `:latest` deliberately — I have no verified-current
+# tag for n8n/MinIO as of this build date and won't fabricate one. Before any
+# real deployment, resolve `:latest` to a specific tag/digest and pin it here
+# (`docker inspect --format='{{.RepoDigests}}' <image>` after a known-good pull).
+#
+# MinIO is a LOCAL S3-compatible stand-in for R2, used only to test the
+# storage adapter without touching real R2/billing. Real deployments use
+# STORAGE_DRIVER=r2 against actual Cloudflare R2, not this service.
+
+services:
+  n8n:
+    image: n8nio/n8n:latest # TODO: pin before real deployment — see note above
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-UTC}
+    env_file:
+      - ../.env
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      helper:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  helper:
+    build:
+      context: ..
+      dockerfile: src/helper/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    environment:
+      - PORT=8088
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8088/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  minio:
+    image: minio/minio:latest # TODO: pin before real deployment — see note above; local-dev storage stand-in only
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-echomedia}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-echomedia_local_dev}
+    volumes:
+      - minio_data:/data
+
+volumes:
+  n8n_data:
+  minio_data:
